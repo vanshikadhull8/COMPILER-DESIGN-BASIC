@@ -1,0 +1,92 @@
+#include <stdio.h>//including different header files 
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// List of all C keywords we want to recognize
+char *keywords[] = {
+    "auto","break","case","char","const","continue","default","do","double",
+    "else","enum","extern","float","for","goto","if","int","long","register",
+    "return","short","signed","sizeof","static","struct","switch","typedef",
+    "union","unsigned","void","volatile","while"
+};
+
+// Function to check if a string is a C keyword
+int isKeyword(char *str) {
+    // Compare the string against all known keywords
+    for (int i = 0; i < 32; i++) {
+        if (strcmp(keywords[i], str) == 0)
+            return 1;  // It's a keyword
+    }
+    return 0;  // Not a keyword
+}
+
+// Function to check if a character is a C operator
+int isOperator(char ch) {
+    // Simple comparison against common operators
+    return (ch == '+' || ch == '-' || ch == '*' || ch == '/' || 
+            ch == '=' || ch == '>' || ch == '<' || ch == '%');
+}
+
+// Main lexical analysis function
+void analyze(FILE *fp) {
+    char ch;          //  character processed
+    char buffer[100]; // Temp storage for build identifiers/keywords
+    int i = 0;        // Index 
+
+    // Process each character in the file
+    while ((ch = fgetc(fp)) != EOF) {
+        // Skip any whitespace characters
+        if (isspace(ch)) {
+            continue;
+        }
+
+        // Handle identifiers and keywords (start with letter or underscore)
+        if (isalpha(ch) || ch == '_') {
+            buffer[i++] = ch;  // Start building the token
+            // Keep adding characters
+            while (isalnum(ch = fgetc(fp)) || ch == '_') {
+                buffer[i++] = ch;
+            }
+            buffer[i] = '\0';  // terminating string
+            i = 0;
+            ungetc(ch, fp);    // Put back the last character 
+
+            // Check if it's a keyword or just an identifier
+            if (isKeyword(buffer))
+                printf("Keyword: %s\n", buffer);
+            else
+                printf("Identifier: %s\n", buffer);
+        }
+
+        // Handle operators
+        else if (isOperator(ch)) {
+            // Check for two-character operators like == or !=
+            char next = fgetc(fp);
+            if ((ch == '=' && next == '=') || (ch == '!' && next == '=')) {
+                printf("Operator: %c%c\n", ch, next);
+            } else {
+                printf("Operator: %c\n", ch);
+                ungetc(next, fp);  // Put back the next character if it wasn't part of a two-char operator
+            }
+        }
+
+       
+    }
+}
+
+int main() {
+    // Open the input file
+    FILE *fp = fopen("input.txt", "r");
+
+    if (fp == NULL) {
+        printf("Error opening file.\n");
+        return 1;
+    }
+
+    printf("Lexical Analysis Output:\n\n");
+    analyze(fp);  // Perform the analysis
+
+    fclose(fp);   // Clean up
+    return 0;
+}
